@@ -1,0 +1,32 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "",
+    "expandedProjectPaths": [
+    ],
+    "file.lastUsedOpenFilter": "All Files (*)",
+    "fileStates": {
+        "C:/Github/CMPM120/StarterPlatformer-master/StarterPlatformer-master/assets/platformer-level-1.tmx": {
+            "scale": 1,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 402,
+                "y": 236.5
+            }
+        },
+        "C:/Github/CMPM120/StarterPlatformer-master/StarterPlatformer-master/assets/platformer-level-1.tmx#tilemap_packed": {
+            "scaleInDock": 1
+        }
+    },
+    "map.tileHeight": 18,
+    "map.tileWidth": 18,
+    "map.width": 120,
+    "openFiles": [
+    ],
+    "project": "DASHOHOLIC.tiled-project",
+    "recentFiles": [
+        "C:/Github/CMPM120/StarterPlatformer-master/StarterPlatformer-master/assets/platformer-level-1.tmx"
+    ]
+}

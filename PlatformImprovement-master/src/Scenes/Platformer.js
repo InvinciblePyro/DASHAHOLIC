@@ -16,21 +16,19 @@ class Platformer extends Phaser.Scene {
     create() {
         // Create a new tilemap game object which uses 18x18 pixel tiles, and is
         // 45 tiles wide and 25 tiles tall.
-        this.map = this.add.tilemap("platformer-level-1", 18, 18, 45, 25);
+        this.map = this.add.tilemap("map");
 
-        // Add a tileset to the map
-        // First parameter: name we gave the tileset in Tiled
-        // Second parameter: key for the tilesheet (from this.load.image in Load.js)
-        this.tileset = this.map.addTilesetImage("kenny_tilemap_packed", "tilemap_tiles");
+        this.tileset1 = this.map.addTilesetImage("monochrome_tilemap_transparent_packed", "monochrome_tilemap_transparent_packed");
+        this.tileset2 = this.map.addTilesetImage("monochrome_tilemap_packed", "monochrome_tilemap_packed");
 
-        // Create a layer
-        this.groundLayer = this.map.createLayer("Ground-n-Platforms", this.tileset, 0, 0);
-
+        this.visualLayer = this.map.createLayer("Ground-n-PlatformsVisual", [this.tileset1, this.tileset2], 0, 0);
+        this.groundLayer = this.map.createLayer("Ground-n-Platforms", [this.tileset1, this.tileset2], 0, 0);
+    
         // Make it collidable
         this.groundLayer.setCollisionByProperty({
             collides: true
         });
-
+        
         // Find coins in the "Objects" layer in Phaser
         // Look for them by finding objects with the name "coin"
         // Assign the coin texture from the tilemap_sheet sprite sheet

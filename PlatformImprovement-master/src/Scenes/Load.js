@@ -9,16 +9,6 @@ class Load extends Phaser.Scene {
         // Load characters spritesheet
         this.load.atlas("platformer_characters", "tilemap-characters-packed.png", "tilemap-characters-packed.json");
 
-        // Load tilemap information
-        this.load.image("tilemap_tiles", "tilemap_packed.png");                         // Packed tilemap
-        this.load.tilemapTiledJSON("platformer-level-1", "platformer-level-1.tmj");   // Tilemap in JSON
-
-        // Load the tilemap as a spritesheet
-        this.load.spritesheet("tilemap_sheet", "tilemap_packed.png", {
-            frameWidth: 18,
-            frameHeight: 18
-        });
-
         // Oooh, fancy. A multi atlas is a texture atlas which has the textures spread
         // across multiple png files, so as to keep their size small for use with
         // lower resource devices (like mobile phones).
@@ -26,6 +16,13 @@ class Load extends Phaser.Scene {
         // The multiatlas was created using TexturePacker and the Kenny
         // Particle Pack asset pack.
         this.load.multiatlas("kenny-particles", "kenny-particles.json");
+
+        //loading map
+        this.load.setPath("./assets/DASHOHOLIC-assets/");
+        this.load.image("monochrome_tilemap_packed", "./kenney_1-bit-platformer-pack/Tilemap/monochrome_tilemap_packed.png");    // tile sheet   
+        this.load.image("monochrome_tilemap_transparent_packed", "./kenney_1-bit-platformer-pack/Tilemap/monochrome_tilemap_transparent_packed.png");    // tile sheet   
+        this.load.tilemapTiledJSON("map", "DASHOHOLIC.json");                   // Load tmx of tilemap
+        this.load.setPath("./assets/");
     }
 
     create() {

@@ -10,7 +10,11 @@ class Platformer extends Phaser.Scene {
         this.physics.world.gravity.y = 1500;
         this.JUMP_VELOCITY = -600;
         this.PARTICLE_VELOCITY = 50;
-        this.SCALE = 2.5;
+        console.log(window.innerHeight);
+        let desiredScale = 2;
+        if(window.innerHeight<=400){desiredScale=1}
+        else if (window.innerHeight<=600){desiredScale=1.5}
+        this.SCALE = desiredScale;
     }
 
     create() {

@@ -13,7 +13,7 @@
 "use strict"
 
 
-let desiredHeight = window.innerHeight <= 800 ? window.innerHeight : 800;
+let desiredHeight = window.innerHeight <= 650 ? window.innerHeight : 650;
 // game config
 let config = {
     parent: 'phaser-game',

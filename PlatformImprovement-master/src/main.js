@@ -12,6 +12,8 @@
 // debug with extreme prejudice
 "use strict"
 
+
+let desiredHeight = window.innerHeight <= 800 ? window.innerHeight : 800;
 // game config
 let config = {
     parent: 'phaser-game',
@@ -29,8 +31,8 @@ let config = {
             }
         }
     },
-    width: 1440,
-    height: 900,
+    width: window.innerWidth,
+    height: desiredHeight,
     scene: [Load, Platformer]
 }
 

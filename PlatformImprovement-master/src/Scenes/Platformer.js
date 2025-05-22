@@ -10,7 +10,7 @@ class Platformer extends Phaser.Scene {
         this.physics.world.gravity.y = 1500;
         this.JUMP_VELOCITY = -600;
         this.PARTICLE_VELOCITY = 50;
-        this.SCALE = 2.0;
+        this.SCALE = 2.5;
     }
 
     create() {
@@ -28,7 +28,8 @@ class Platformer extends Phaser.Scene {
         this.groundLayer.setCollisionByProperty({
             collides: true
         });
-        
+        this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+
         // Find coins in the "Objects" layer in Phaser
         // Look for them by finding objects with the name "coin"
         // Assign the coin texture from the tilemap_sheet sprite sheet
@@ -51,7 +52,7 @@ class Platformer extends Phaser.Scene {
         
 
         // set up player avatar
-        my.sprite.player = this.physics.add.sprite(30, 345, "platformer_characters", "tile_0000.png");
+        my.sprite.player = this.physics.add.sprite(30, 0, "platformer_characters", "tile_0000.png");
         my.sprite.player.setCollideWorldBounds(true);
 
         // Enable collision handling

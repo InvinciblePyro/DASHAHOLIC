@@ -5,6 +5,7 @@ class Platformer extends Phaser.Scene {
 
     init() {
         // variables and settings
+        this.lastDirection = null; // "left", "right", or null        
         this.ACCELERATION =400;
         this.DRAG = 2000;    // DRAG < ACCELERATION = icy slide
         this.physics.world.gravity.y = 1500;
@@ -96,11 +97,22 @@ class Platformer extends Phaser.Scene {
             // TODO: Try: gravityY: -400,
             alpha: { start: 1, end: 0.1 },
         });
-
         my.vfx.walking.stop();
         
-        
+        // dashing vfx
+        my.vfx.dashing = this.add.particles(0, 0, "kenny-particles", {
+            frame: ['magic_03.png', 'magic_05.png'],
+            // TODO: Try: add random: true
+            scale: { start: 0.03, end: 0.1 },
+            // TODO: Try: maxAliveParticles: 8,
+            lifespan: 200,
+            // TODO: Try: gravityY: -400,
+            alpha: { start: 1, end: 0.1 },
+        });
+        my.vfx.dashing.startFollow(my.sprite.player, 0, 0);
+        my.vfx.dashing.stop();
 
+        
         // camera code
         this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
         this.cameras.main.startFollow(my.sprite.player, true, 0.25, 0.25); // (target, [,roundPixels][,lerpX][,lerpY])
@@ -111,7 +123,16 @@ class Platformer extends Phaser.Scene {
     }
 
     update() {
+        const player = my.sprite.player;
+
         if(cursors.left.isDown) {
+            if (this.lastDirection !== "left") {
+                my.sprite.player.setVelocityX(0); // cancel rightward velocity
+                my.sprite.player.setDragX(this.DRAG);
+            }
+            my.sprite.player.setAccelerationX(-this.ACCELERATION);
+            this.lastDirection = "left";
+
             my.sprite.player.setAccelerationX(-this.ACCELERATION);
             my.sprite.player.resetFlip();
             my.sprite.player.anims.play('walk', true);
@@ -126,6 +147,13 @@ class Platformer extends Phaser.Scene {
             }
 
         } else if(cursors.right.isDown) {
+            if (this.lastDirection !== "right") {
+                my.sprite.player.setVelocityX(0); // cancel leftward velocity
+                my.sprite.player.setDragX(this.DRAG);
+            }
+            my.sprite.player.setAccelerationX(this.ACCELERATION);
+            this.lastDirection = "right";
+
             my.sprite.player.setAccelerationX(this.ACCELERATION);
             my.sprite.player.setFlip(true, false);
             my.sprite.player.anims.play('walk', true);
@@ -143,6 +171,7 @@ class Platformer extends Phaser.Scene {
             // Set acceleration to 0 and have DRAG take over
             my.sprite.player.setAccelerationX(0);
             my.sprite.player.setDragX(this.DRAG);
+            this.lastDirection = null;
             my.sprite.player.anims.play('idle');
             // TODO: have the vfx stop playing
             my.vfx.walking.stop();
@@ -159,7 +188,9 @@ class Platformer extends Phaser.Scene {
         
         // player dash
         if (Phaser.Input.Keyboard.JustDown(this.shiftKey) && this.canDash) {
-            // Only allow dash if moving left or right
+            my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
+            my.vfx.dashing.start();
+            // Only allow dash if moving 
             if (cursors.left.isDown) {
                 my.sprite.player.setVelocityX(-this.DASH_VELOCITY);
             } else if (cursors.right.isDown) {
@@ -175,6 +206,7 @@ class Platformer extends Phaser.Scene {
             // Re-enable dash after cooldown
             this.time.delayedCall(this.dashCooldown, () => {
                 this.canDash = true;
+                my.vfx.dashing.stop();
             });
         }
     

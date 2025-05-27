@@ -11,6 +11,12 @@ class Platformer extends Phaser.Scene {
         this.JUMP_VELOCITY = -600;
         this.PARTICLE_VELOCITY = 50;
 
+        // dash settings
+        this.DASH_VELOCITY = 800;
+        this.canDash = true;
+        this.dashCooldown = 500; // in milliseconds
+
+        // window scaling
         let desiredScale = 2;
         if(window.innerHeight<=400){desiredScale=1}
         else if (window.innerHeight<=600){desiredScale=1.5}
@@ -70,8 +76,9 @@ class Platformer extends Phaser.Scene {
 
         // set up Phaser-provided cursor key input
         cursors = this.input.keyboard.createCursorKeys();
-
         this.rKey = this.input.keyboard.addKey('R');
+        this.shiftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+
 
         // debug key listener (assigned to D key)
         this.input.keyboard.on('keydown-D', () => {
@@ -149,7 +156,29 @@ class Platformer extends Phaser.Scene {
         if(my.sprite.player.body.blocked.down && Phaser.Input.Keyboard.JustDown(cursors.up)) {
             my.sprite.player.body.setVelocityY(this.JUMP_VELOCITY);
         }
+        
+        // player dash
+        if (Phaser.Input.Keyboard.JustDown(this.shiftKey) && this.canDash) {
+            // Only allow dash if moving left or right
+            if (cursors.left.isDown) {
+                my.sprite.player.setVelocityX(-this.DASH_VELOCITY);
+            } else if (cursors.right.isDown) {
+                my.sprite.player.setVelocityX(this.DASH_VELOCITY);
+            } 
+            
+            if (cursors.up.isDown) {
+                my.sprite.player.body.setVelocityY(-this.DASH_VELOCITY);
+            }
 
+            this.canDash = false;
+
+            // Re-enable dash after cooldown
+            this.time.delayedCall(this.dashCooldown, () => {
+                this.canDash = true;
+            });
+        }
+    
+        // scene restart
         if(Phaser.Input.Keyboard.JustDown(this.rKey)) {
             this.scene.restart();
         }

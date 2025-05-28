@@ -23,6 +23,18 @@ class Load extends Phaser.Scene {
         this.load.image("monochrome_tilemap_transparent_packed", "./kenney_1-bit-platformer-pack/Tilemap/monochrome_tilemap_transparent_packed.png");    // tile sheet   
         this.load.tilemapTiledJSON("map", "DASHOHOLIC.json");                   // Load tmx of tilemap
         this.load.setPath("./assets/");
+
+        //loading music
+        this.load.audio("OST", "DASHOHOLIC-OST.mp3");
+
+        //loading sfx
+        this.load.audio("SFX-CoinCollect", "DASHOHOLIC-FX-CoinCollect.mp3");
+        this.load.audio("SFX-Dash", "DASHOHOLIC-FX-DashFX.mp3");
+        this.load.audio("SFX-Fail", "DASHOHOLIC-FX-Fail.mp3");
+        this.load.audio("SFX-lvlFinish", "DASHOHOLIC-FX-LvlFinish.mp3");
+
+
+
     }
 
     create() {

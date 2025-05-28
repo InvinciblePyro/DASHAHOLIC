@@ -1,11 +1,13 @@
+let globalMusic = null;
 class Platformer extends Phaser.Scene {
     constructor() {
         super("platformerScene");
     }
 
-    init() {
+    init(data) {
         // variables and settings
-        this.timeLeft = 60; //timer in seconds
+        this.lvl = data?.lvl ?? 1;
+        this.timeLeft = 10; //timer in seconds
         this.lastDirection = null; // "left", "right", or null        
         this.ACCELERATION =400;
         this.DRAG = 2000;    // DRAG < ACCELERATION = icy slide
@@ -49,16 +51,23 @@ class Platformer extends Phaser.Scene {
         // Assign the coin texture from the tilemap_sheet sprite sheet
         // Phaser docs:
         // https://newdocs.phaser.io/docs/3.80.0/focus/Phaser.Tilemaps.Tilemap-createFromObjects
-        this.coins = this.map.createFromObjects("Objects", {
-            name: "coin",
-            key: "kenny-particles",
-            frame: "muzzle_02.png"
-        });
-        this.coins.forEach(coin => {
-            coin.setScale(0.05); // 2x bigger
-            coin.anims.play('coinSpin'); // play animation
-        });
-        
+        this.coins = [];
+
+        for (let i = 0; i < this.lvl; i++) {  // spawn 10 coins
+            // Pick random x/y within world bounds (adjust as needed)
+            let x = Phaser.Math.Between(50, this.map.widthInPixels - 50);
+            let y = Phaser.Math.Between(50, this.map.heightInPixels - 100);
+
+            let coin = this.add.sprite(x, y, "kenny-particles", "muzzle_02.png");
+            coin.setScale(0.05);
+            coin.anims.play("coinSpin");
+            this.physics.add.existing(coin, true);  // true = static body
+
+            this.coins.push(coin);
+        }
+
+        this.coinGroup = this.add.group(this.coins);
+
         // Since createFromObjects returns an array of regular Sprites, we need to convert 
         // them into Arcade Physics sprites (STATIC_BODY, so they don't move) 
         this.physics.world.enable(this.coins, Phaser.Physics.Arcade.STATIC_BODY);
@@ -77,7 +86,10 @@ class Platformer extends Phaser.Scene {
         // Handle collision detection with coins
         this.physics.add.overlap(my.sprite.player, this.coinGroup, (obj1, obj2) => {
             obj2.destroy(); // remove coin on overlap 
+            this.SFX_CoinCollect.play();
+
             this.coinText.setText(`Coins: ${this.coinGroup.countActive(true)}`);
+            this.timeLeft+=1;
             if (this.coinGroup.countActive(true) <= 0){this.win();}
         });
         
@@ -86,7 +98,11 @@ class Platformer extends Phaser.Scene {
         this.rKey = this.input.keyboard.addKey('R');
         this.shiftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
 
+
+        this.physics.world.drawDebug = false; // Start with debug off
+        this.physics.world.debugGraphic.clear();
         // debug key listener (assigned to D key)
+        this.physics.world.debugGraphic.clear()
         this.input.keyboard.on('keydown-D', () => {
             this.physics.world.drawDebug = this.physics.world.drawDebug ? false : true
             this.physics.world.debugGraphic.clear()
@@ -137,13 +153,22 @@ class Platformer extends Phaser.Scene {
         .setDepth(1000)            // Draw on top of everything else
         this.uiGroup.add(this.coinText);
 
+        //lvl text
+        this.lvlText = this.add.text(16, 65, `Lvl: ${this.lvl}`, {
+            fontSize: '24px',
+            fill: '#ffffff',
+            fontFamily: "Monospace"
+        })
+            .setScrollFactor(0)        // Stay fixed on screen
+            .setDepth(1000)            // Draw on top of everything else
+        this.uiGroup.add(this.lvlText);
+
         //timer
         this.time.addEvent({
             delay: 1000,                // 1 second
             callback: () => {
                 this.timeLeft--;
                 this.timerText.setText(`Time: ${this.timeLeft}`);
-
                 if (this.timeLeft <= 0) {this.timeUp();}
             },
             callbackScope: this,
@@ -160,16 +185,24 @@ class Platformer extends Phaser.Scene {
         this.UICam = this.cameras.add(0, 0, this.game.config.width, this.game.config.height);
         this.UICam.setScroll(0, 0);
         this.UICam.setZoom(1);
-        this.UICam.ignore([ 
-            my.sprite.player, 
-            this.groundLayer, 
-            this.visualLayer, 
-            ...this.coins,
-        ]);
-        this.UICam.ignore(
-            this.children.list.filter(obj => !this.uiGroup.contains(obj))
-        );
+        this.UICam.ignore([my.sprite.player, this.groundLayer, this.visualLayer, ...this.coins,]);
+        this.UICam.ignore(this.children.list.filter(obj => !this.uiGroup.contains(obj)));
         
+        //OST
+        if (!globalMusic) {
+            globalMusic = this.sound.add("OST", {
+                loop: true,
+                volume: 1,
+                rate: 1,
+            });
+            globalMusic.play();
+        }
+
+        //SFX
+        this.SFX_CoinCollect = this.sound.add("SFX-CoinCollect");
+        this.SFX_Dash = this.sound.add("SFX-Dash");
+        this.SFX_Fail = this.sound.add("SFX-Fail");
+        this.SFX_lvlFinish = this.sound.add("SFX-lvlFinish");
     }
 
     update() {
@@ -242,13 +275,18 @@ class Platformer extends Phaser.Scene {
             my.vfx.dashing.start();
             // Only allow dash if moving 
             if (cursors.left.isDown) {
+                my.sprite.player.body.setVelocityY(0);
                 my.sprite.player.setVelocityX(-this.DASH_VELOCITY);
+                this.SFX_Dash.play();
             } else if (cursors.right.isDown) {
+                my.sprite.player.body.setVelocityY(0);
                 my.sprite.player.setVelocityX(this.DASH_VELOCITY);
+                this.SFX_Dash.play();
             } 
             
             if (cursors.up.isDown) {
                 my.sprite.player.body.setVelocityY(-this.DASH_VELOCITY);
+                this.SFX_Dash.play();
             }
 
             this.canDash = false;
@@ -265,6 +303,14 @@ class Platformer extends Phaser.Scene {
             this.scene.restart();
         }
     }
-    timeUp() { this.scene.restart(); }
-    win() { this.scene.restart(); }
+    timeUp() 
+    { 
+        this.SFX_Fail.play();
+        this.scene.restart({ lvl: 1 }); 
+    }
+    win() 
+    { 
+        this.SFX_lvlFinish.play();
+        this.scene.restart({ lvl: this.lvl + 1 });  // pass next level
+    }
 }

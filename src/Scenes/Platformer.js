@@ -1,5 +1,5 @@
 let globalMusic = null;
-let highScore = 1;
+let highScore = parseInt(localStorage.getItem("highscore")) || 0;
 class Platformer extends Phaser.Scene {
     constructor() {
         super("platformerScene");

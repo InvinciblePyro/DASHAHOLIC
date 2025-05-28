@@ -81,6 +81,13 @@ class Load extends Phaser.Scene {
             ],
         });
 
+
+        let highScore = localStorage.getItem("highScore");
+        if (highScore === null) {
+            highScore = 0;
+            localStorage.setItem("highScore", highScore);
+        }
+
          // ...and pass to the next Scene
          this.scene.start("platformerScene");
     }

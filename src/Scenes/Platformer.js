@@ -1,5 +1,5 @@
 let globalMusic = null;
-let highScore = parseInt(localStorage.getItem("highscore")) || 0;
+let highScore = 1;
 class Platformer extends Phaser.Scene {
     constructor() {
         super("platformerScene");
@@ -87,7 +87,7 @@ class Platformer extends Phaser.Scene {
         // Handle collision detection with coins
         this.physics.add.overlap(my.sprite.player, this.coinGroup, (obj1, obj2) => {
             obj2.destroy(); // remove coin on overlap 
-            this.SFX_CoinCollect.play();
+            this.SFX_CoinCollect.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
 
             this.coinText.setText(`Coins: ${this.coinGroup.countActive(true)}`);
             this.timeLeft+=1;
@@ -170,6 +170,7 @@ class Platformer extends Phaser.Scene {
             callback: () => {
                 this.timeLeft--;
                 this.timerText.setText(`Time: ${this.timeLeft}`);
+                if (this.timeLeft <= 3 && this.timeLeft > 0) {this.SFX_BombTick.play()}
                 if (this.timeLeft <= 0) {this.timeUp();}
             },
             callbackScope: this,
@@ -193,7 +194,7 @@ class Platformer extends Phaser.Scene {
         if (!globalMusic) {
             globalMusic = this.sound.add("OST", {
                 loop: true,
-                volume: 1,
+                volume: 0.8,
                 rate: 1,
             });
             globalMusic.play();
@@ -204,6 +205,7 @@ class Platformer extends Phaser.Scene {
         this.SFX_Dash = this.sound.add("SFX-Dash");
         this.SFX_Fail = this.sound.add("SFX-Fail");
         this.SFX_lvlFinish = this.sound.add("SFX-lvlFinish");
+        this.SFX_BombTick= this.sound.add("SFX-BombTick");
     }
 
     update() {
@@ -272,22 +274,43 @@ class Platformer extends Phaser.Scene {
         
         // player dash
         if (Phaser.Input.Keyboard.JustDown(this.shiftKey) && this.canDash) {
-            my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
-            my.vfx.dashing.start();
             // Only allow dash if moving 
             if (cursors.left.isDown) {
                 my.sprite.player.body.setVelocityY(0);
                 my.sprite.player.setVelocityX(-this.DASH_VELOCITY);
-                this.SFX_Dash.play();
+
+                my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
+                my.vfx.dashing.start();
+                this.SFX_Dash.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
+                this.cameras.main.shake(100, 0.002);
+
             } else if (cursors.right.isDown) {
                 my.sprite.player.body.setVelocityY(0);
                 my.sprite.player.setVelocityX(this.DASH_VELOCITY);
-                this.SFX_Dash.play();
+
+                my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
+                my.vfx.dashing.start();
+                this.SFX_Dash.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
+                this.cameras.main.shake(100, 0.002);
             } 
             
             if (cursors.up.isDown) {
                 my.sprite.player.body.setVelocityY(-this.DASH_VELOCITY);
-                this.SFX_Dash.play();
+
+                my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
+                my.vfx.dashing.start();
+                this.SFX_Dash.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
+                this.cameras.main.shake(100, 0.002);
+            }
+
+            if (cursors.down.isDown) {
+                my.sprite.player.body.setVelocityX(0);
+                my.sprite.player.body.setVelocityY(this.DASH_VELOCITY);
+
+                my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
+                my.vfx.dashing.start();
+                this.SFX_Dash.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
+                this.cameras.main.shake(100, 0.002);
             }
 
             this.canDash = false;

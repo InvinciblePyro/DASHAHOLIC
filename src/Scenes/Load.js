@@ -32,6 +32,7 @@ class Load extends Phaser.Scene {
         this.load.audio("SFX-Dash", "DASHOHOLIC-FX-DashFX.mp3");
         this.load.audio("SFX-Fail", "DASHOHOLIC-FX-Fail.mp3");
         this.load.audio("SFX-lvlFinish", "DASHOHOLIC-FX-LvlFinish.mp3");
+        this.load.audio("SFX-BombTick", "DASHOHOLIC-FX-BombTick.mp3");
 
 
 
@@ -43,7 +44,7 @@ class Load extends Phaser.Scene {
             frames: this.anims.generateFrameNames('kenny-particles', {
                 prefix: 'muzzle_0',
                 start: 1,
-                end: 5,
+                end: 3,
                 suffix: '.png',
                 zeroPad: 0
             }),
@@ -80,13 +81,6 @@ class Load extends Phaser.Scene {
                 { frame: "tile_0001.png" }
             ],
         });
-
-
-        let highScore = localStorage.getItem("highScore");
-        if (highScore === null) {
-            highScore = 0;
-            localStorage.setItem("highScore", highScore);
-        }
 
          // ...and pass to the next Scene
          this.scene.start("platformerScene");

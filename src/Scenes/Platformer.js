@@ -194,7 +194,7 @@ class Platformer extends Phaser.Scene {
         if (!globalMusic) {
             globalMusic = this.sound.add("OST", {
                 loop: true,
-                volume: 0.8,
+                volume: 1,
                 rate: 1,
             });
             globalMusic.play();

@@ -1,4 +1,5 @@
 let globalMusic = null;
+let highScore = 1;
 class Platformer extends Phaser.Scene {
     constructor() {
         super("platformerScene");
@@ -153,15 +154,15 @@ class Platformer extends Phaser.Scene {
         .setDepth(1000)            // Draw on top of everything else
         this.uiGroup.add(this.coinText);
 
-        //lvl text
-        this.lvlText = this.add.text(16, 65, `Lvl: ${this.lvl}`, {
+        //highscore text
+        this.highScoreText = this.add.text(16, 65, `Highscore: ${highScore}`, {
             fontSize: '24px',
             fill: '#ffffff',
             fontFamily: "Monospace"
         })
             .setScrollFactor(0)        // Stay fixed on screen
             .setDepth(1000)            // Draw on top of everything else
-        this.uiGroup.add(this.lvlText);
+        this.uiGroup.add(this.highScoreText);
 
         //timer
         this.time.addEvent({
@@ -311,6 +312,7 @@ class Platformer extends Phaser.Scene {
     win() 
     { 
         this.SFX_lvlFinish.play();
+        if (this.lvl > highScore){ highScore = this.lvl}
         this.scene.restart({ lvl: this.lvl + 1 });  // pass next level
     }
 }

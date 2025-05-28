@@ -27,6 +27,19 @@ class Load extends Phaser.Scene {
 
     create() {
         this.anims.create({
+            key: 'coinSpin',
+            frames: this.anims.generateFrameNames('kenny-particles', {
+                prefix: 'muzzle_0',
+                start: 1,
+                end: 5,
+                suffix: '.png',
+                zeroPad: 0
+            }),
+            frameRate: 6,
+            repeat: -1
+        });
+
+        this.anims.create({
             key: 'walk',
             frames: this.anims.generateFrameNames('platformer_characters', {
                 prefix: "tile_",

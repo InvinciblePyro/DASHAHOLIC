@@ -5,6 +5,7 @@ class Platformer extends Phaser.Scene {
 
     init() {
         // variables and settings
+        this.timeLeft = 60; //timer in seconds
         this.lastDirection = null; // "left", "right", or null        
         this.ACCELERATION =400;
         this.DRAG = 2000;    // DRAG < ACCELERATION = icy slide
@@ -25,6 +26,8 @@ class Platformer extends Phaser.Scene {
     }
 
     create() {
+        //uigroup for ui screen elements:
+        this.uiGroup = this.add.group();
         // Create a new tilemap game object which uses 18x18 pixel tiles, and is
         // 45 tiles wide and 25 tiles tall.
         this.map = this.add.tilemap("map");
@@ -48,11 +51,14 @@ class Platformer extends Phaser.Scene {
         // https://newdocs.phaser.io/docs/3.80.0/focus/Phaser.Tilemaps.Tilemap-createFromObjects
         this.coins = this.map.createFromObjects("Objects", {
             name: "coin",
-            key: "tilemap_sheet",
-            frame: 151
+            key: "kenny-particles",
+            frame: "muzzle_02.png"
+        });
+        this.coins.forEach(coin => {
+            coin.setScale(0.05); // 2x bigger
+            coin.anims.play('coinSpin'); // play animation
         });
         
-
         // Since createFromObjects returns an array of regular Sprites, we need to convert 
         // them into Arcade Physics sprites (STATIC_BODY, so they don't move) 
         this.physics.world.enable(this.coins, Phaser.Physics.Arcade.STATIC_BODY);
@@ -61,7 +67,6 @@ class Platformer extends Phaser.Scene {
         // This will be used for collision detection below.
         this.coinGroup = this.add.group(this.coins);
         
-
         // set up player avatar
         my.sprite.player = this.physics.add.sprite(30, 0, "platformer_characters", "tile_0000.png");
         my.sprite.player.setCollideWorldBounds(true);
@@ -72,14 +77,14 @@ class Platformer extends Phaser.Scene {
         // Handle collision detection with coins
         this.physics.add.overlap(my.sprite.player, this.coinGroup, (obj1, obj2) => {
             obj2.destroy(); // remove coin on overlap 
+            this.coinText.setText(`Coins: ${this.coinGroup.countActive(true)}`);
+            if (this.coinGroup.countActive(true) <= 0){this.win();}
         });
         
-
         // set up Phaser-provided cursor key input
         cursors = this.input.keyboard.createCursorKeys();
         this.rKey = this.input.keyboard.addKey('R');
         this.shiftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
-
 
         // debug key listener (assigned to D key)
         this.input.keyboard.on('keydown-D', () => {
@@ -112,14 +117,59 @@ class Platformer extends Phaser.Scene {
         my.vfx.dashing.startFollow(my.sprite.player, 0, 0);
         my.vfx.dashing.stop();
 
+        //timer text
+        this.timerText = this.add.text(16, 16, `Time: ${this.timeLeft}`, {
+            fontSize: '24px',
+            fill: '#ffffff',
+            fontFamily: "Monospace"
+        })
+        .setScrollFactor(0)        // Stay fixed on screen
+        .setDepth(1000)            // Draw on top of everything else
+        this.uiGroup.add(this.timerText);
+        
+        //number of Coins text
+        this.coinText = this.add.text(16, 40, `Coins: ${this.coinGroup.countActive(true)}`, {
+            fontSize: '24px',
+            fill: '#ffffff',
+            fontFamily: "Monospace"
+        })
+        .setScrollFactor(0)        // Stay fixed on screen
+        .setDepth(1000)            // Draw on top of everything else
+        this.uiGroup.add(this.coinText);
+
+        //timer
+        this.time.addEvent({
+            delay: 1000,                // 1 second
+            callback: () => {
+                this.timeLeft--;
+                this.timerText.setText(`Time: ${this.timeLeft}`);
+
+                if (this.timeLeft <= 0) {this.timeUp();}
+            },
+            callbackScope: this,
+            loop: true
+        });
         
         // camera code
         this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
         this.cameras.main.startFollow(my.sprite.player, true, 0.25, 0.25); // (target, [,roundPixels][,lerpX][,lerpY])
         this.cameras.main.setDeadzone(50, 50);
         this.cameras.main.setZoom(this.SCALE);
-        
 
+        // Create a second camera for UI (like the timer)
+        this.UICam = this.cameras.add(0, 0, this.game.config.width, this.game.config.height);
+        this.UICam.setScroll(0, 0);
+        this.UICam.setZoom(1);
+        this.UICam.ignore([ 
+            my.sprite.player, 
+            this.groundLayer, 
+            this.visualLayer, 
+            ...this.coins,
+        ]);
+        this.UICam.ignore(
+            this.children.list.filter(obj => !this.uiGroup.contains(obj))
+        );
+        
     }
 
     update() {
@@ -215,4 +265,6 @@ class Platformer extends Phaser.Scene {
             this.scene.restart();
         }
     }
+    timeUp() { this.scene.restart(); }
+    win() { this.scene.restart(); }
 }

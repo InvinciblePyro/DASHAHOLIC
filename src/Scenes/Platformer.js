@@ -1,11 +1,15 @@
 let globalMusic = null;
 let highScore = 1;
+
 class Platformer extends Phaser.Scene {
     constructor() {
         super("platformerScene");
     }
 
     init(data) {
+        //pause
+        this.isPaused = false;
+
         // variables and settings
         this.lvl = data?.lvl ?? 1;
         this.timeLeft = 10; //timer in seconds
@@ -19,7 +23,7 @@ class Platformer extends Phaser.Scene {
         // dash settings
         this.DASH_VELOCITY = 800;
         this.canDash = true;
-        this.dashCooldown = 500; // in milliseconds
+        this.dashCooldown = 1000; // in milliseconds
 
         // window scaling
         let desiredScale = 2;
@@ -31,6 +35,7 @@ class Platformer extends Phaser.Scene {
     create() {
         //uigroup for ui screen elements:
         this.uiGroup = this.add.group();
+        
         // Create a new tilemap game object which uses 18x18 pixel tiles, and is
         // 45 tiles wide and 25 tiles tall.
         this.map = this.add.tilemap("map");
@@ -90,21 +95,31 @@ class Platformer extends Phaser.Scene {
             this.SFX_CoinCollect.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
 
             this.coinText.setText(`Coins: ${this.coinGroup.countActive(true)}`);
-            this.timeLeft+=1;
+            if(this.timeLeft<=10){this.timeLeft+=1;}
             if (this.coinGroup.countActive(true) <= 0){this.win();}
         });
         
         // set up Phaser-provided cursor key input
         cursors = this.input.keyboard.createCursorKeys();
         this.rKey = this.input.keyboard.addKey('R');
+        this.escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+        
+        //pause key 
         this.shiftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+        
+        //wasd keys
+        this.WKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+        this.AKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+        this.SKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+        this.DKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
 
-
-        this.physics.world.drawDebug = false; // Start with debug off
+        // Start with debug off
+        this.physics.world.drawDebug = false; 
         this.physics.world.debugGraphic.clear();
-        // debug key listener (assigned to D key)
+
+        // debug key listener (assigned to F key)
         this.physics.world.debugGraphic.clear()
-        this.input.keyboard.on('keydown-D', () => {
+        this.input.keyboard.on('keydown-F', () => {
             this.physics.world.drawDebug = this.physics.world.drawDebug ? false : true
             this.physics.world.debugGraphic.clear()
         }, this);
@@ -121,6 +136,8 @@ class Platformer extends Phaser.Scene {
         });
         my.vfx.walking.stop();
         
+        //dashing var
+        this.numOfDashes = 0;
         // dashing vfx
         my.vfx.dashing = this.add.particles(0, 0, "kenny-particles", {
             frame: ['magic_03.png', 'magic_05.png'],
@@ -134,6 +151,7 @@ class Platformer extends Phaser.Scene {
         my.vfx.dashing.startFollow(my.sprite.player, 0, 0);
         my.vfx.dashing.stop();
 
+ 
         //timer text
         this.timerText = this.add.text(16, 16, `Time: ${this.timeLeft}`, {
             fontSize: '24px',
@@ -164,13 +182,25 @@ class Platformer extends Phaser.Scene {
             .setDepth(1000)            // Draw on top of everything else
         this.uiGroup.add(this.highScoreText);
 
+        //Pause text
+        this.pauseText = this.add.text(window.innerWidth / 2, window.innerHeight/4, `PAUSED`, {
+            fontSize: '64px',
+            fill: '#ffffff',
+            fontFamily: "Monospace"
+        })
+            .setOrigin(0.5)
+            .setScrollFactor(0)        // Stay fixed on screen
+            .setDepth(1000)            // Draw on top of everything else
+        this.uiGroup.add(this.pauseText);
+        this.pauseText.setVisible(false);
+
         //timer
         this.time.addEvent({
             delay: 1000,                // 1 second
             callback: () => {
-                this.timeLeft--;
+                if(!this.isPaused){this.timeLeft--;}
                 this.timerText.setText(`Time: ${this.timeLeft}`);
-                if (this.timeLeft <= 3 && this.timeLeft > 0) {this.SFX_BombTick.play()}
+                if (this.timeLeft <= 3 && this.timeLeft > 0 && !this.isPaused) {this.SFX_BombTick.play()}
                 if (this.timeLeft <= 0) {this.timeUp();}
             },
             callbackScope: this,
@@ -182,12 +212,12 @@ class Platformer extends Phaser.Scene {
         this.cameras.main.startFollow(my.sprite.player, true, 0.25, 0.25); // (target, [,roundPixels][,lerpX][,lerpY])
         this.cameras.main.setDeadzone(50, 50);
         this.cameras.main.setZoom(this.SCALE);
-
+    
         // Create a second camera for UI (like the timer)
         this.UICam = this.cameras.add(0, 0, this.game.config.width, this.game.config.height);
         this.UICam.setScroll(0, 0);
         this.UICam.setZoom(1);
-        this.UICam.ignore([my.sprite.player, this.groundLayer, this.visualLayer, ...this.coins,]);
+        this.UICam.ignore([my.sprite.player, this.groundLayer, this.visualLayer, ...this.coins]);
         this.UICam.ignore(this.children.list.filter(obj => !this.uiGroup.contains(obj)));
         
         //OST
@@ -209,119 +239,139 @@ class Platformer extends Phaser.Scene {
     }
 
     update() {
-        const player = my.sprite.player;
-
-        if(cursors.left.isDown) {
-            if (this.lastDirection !== "left") {
-                my.sprite.player.setVelocityX(0); // cancel rightward velocity
-                my.sprite.player.setDragX(this.DRAG);
-            }
-            my.sprite.player.setAccelerationX(-this.ACCELERATION);
-            this.lastDirection = "left";
-
-            my.sprite.player.setAccelerationX(-this.ACCELERATION);
-            my.sprite.player.resetFlip();
-            my.sprite.player.anims.play('walk', true);
-            // TODO: add particle following code here
-            my.vfx.walking.startFollow(my.sprite.player, my.sprite.player.displayWidth / 2 - 10, my.sprite.player.displayHeight / 2 - 5, false);
-
-            my.vfx.walking.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
-
-            // Only play smoke effect if touching the ground
-            if (my.sprite.player.body.blocked.down) {    
-                my.vfx.walking.start();
-            }
-
-        } else if(cursors.right.isDown) {
-            if (this.lastDirection !== "right") {
-                my.sprite.player.setVelocityX(0); // cancel leftward velocity
-                my.sprite.player.setDragX(this.DRAG);
-            }
-            my.sprite.player.setAccelerationX(this.ACCELERATION);
-            this.lastDirection = "right";
-
-            my.sprite.player.setAccelerationX(this.ACCELERATION);
-            my.sprite.player.setFlip(true, false);
-            my.sprite.player.anims.play('walk', true);
-            // TODO: add particle following code here
-            my.vfx.walking.startFollow(my.sprite.player, my.sprite.player.displayWidth / 2 - 10, my.sprite.player.displayHeight / 2 - 5, false);
-
-            my.vfx.walking.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
-
-            // Only play smoke effect if touching the ground
-            if (my.sprite.player.body.blocked.down) {
-                my.vfx.walking.start();
-            }
-
-        } else {
-            // Set acceleration to 0 and have DRAG take over
+        //pause
+        if (Phaser.Input.Keyboard.JustDown(this.escKey)) {
+            this.isPaused = this.isPaused ? false : true;
+            globalMusic.volume = globalMusic.volume==1 ? 0 : 1;
+            this.pauseText.setVisible(this.isPaused);
+            my.sprite.player.setVelocityX(0);
+            my.sprite.player.setVelocityY(0);
             my.sprite.player.setAccelerationX(0);
-            my.sprite.player.setDragX(this.DRAG);
-            this.lastDirection = null;
-            my.sprite.player.anims.play('idle');
-            // TODO: have the vfx stop playing
-            my.vfx.walking.stop();
+            my.sprite.player.setAccelerationY(0);
         }
 
-        // player jump
-        // note that we need body.blocked rather than body.touching b/c the former applies to tilemap tiles and the latter to the "ground"
-        if(!my.sprite.player.body.blocked.down) {
-            my.sprite.player.anims.play('jump');
-        }
-        if(my.sprite.player.body.blocked.down && Phaser.Input.Keyboard.JustDown(cursors.up)) {
-            my.sprite.player.body.setVelocityY(this.JUMP_VELOCITY);
-        }
-        
-        // player dash
-        if (Phaser.Input.Keyboard.JustDown(this.shiftKey) && this.canDash) {
-            // Only allow dash if moving 
-            if (cursors.left.isDown) {
-                my.sprite.player.body.setVelocityY(0);
-                my.sprite.player.setVelocityX(-this.DASH_VELOCITY);
+        const player = my.sprite.player;
+        //arrow and wasd movement
+        if (!this.isPaused) {
+            if (cursors.left.isDown || this.AKey.isDown) {
+                if (this.lastDirection !== "left") {
+                    my.sprite.player.setVelocityX(0); // cancel rightward velocity
+                    my.sprite.player.setDragX(this.DRAG);
+                }
+                my.sprite.player.setAccelerationX(-this.ACCELERATION);
+                this.lastDirection = "left";
 
-                my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
-                my.vfx.dashing.start();
-                this.SFX_Dash.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
-                this.cameras.main.shake(100, 0.002);
+                my.sprite.player.setAccelerationX(-this.ACCELERATION);
+                my.sprite.player.resetFlip();
+                my.sprite.player.anims.play('walk', true);
+                // TODO: add particle following code here
+                my.vfx.walking.startFollow(my.sprite.player, my.sprite.player.displayWidth / 2 - 10, my.sprite.player.displayHeight / 2 - 5, false);
 
-            } else if (cursors.right.isDown) {
-                my.sprite.player.body.setVelocityY(0);
-                my.sprite.player.setVelocityX(this.DASH_VELOCITY);
+                my.vfx.walking.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
 
-                my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
-                my.vfx.dashing.start();
-                this.SFX_Dash.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
-                this.cameras.main.shake(100, 0.002);
-            } 
+                // Only play smoke effect if touching the ground
+                if (my.sprite.player.body.blocked.down) {    
+                    my.vfx.walking.start();
+                }
+
+            } else if (cursors.right.isDown || this.DKey.isDown) {
+                if (this.lastDirection !== "right") {
+                    my.sprite.player.setVelocityX(0); // cancel leftward velocity
+                    my.sprite.player.setDragX(this.DRAG);
+                }
+                my.sprite.player.setAccelerationX(this.ACCELERATION);
+                this.lastDirection = "right";
+
+                my.sprite.player.setAccelerationX(this.ACCELERATION);
+                my.sprite.player.setFlip(true, false);
+                my.sprite.player.anims.play('walk', true);
+                // TODO: add particle following code here
+                my.vfx.walking.startFollow(my.sprite.player, my.sprite.player.displayWidth / 2 - 10, my.sprite.player.displayHeight / 2 - 5, false);
+
+                my.vfx.walking.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
+
+                // Only play smoke effect if touching the ground
+                if (my.sprite.player.body.blocked.down) {
+                    my.vfx.walking.start();
+                }
+
+            } else {
+                // Set acceleration to 0 and have DRAG take over
+                my.sprite.player.setAccelerationX(0);
+                my.sprite.player.setDragX(this.DRAG);
+                this.lastDirection = null;
+                my.sprite.player.anims.play('idle');
+                // TODO: have the vfx stop playing
+                my.vfx.walking.stop();
+            }
+
+            // player jump
+            // note that we need body.blocked rather than body.touching b/c the former applies to tilemap tiles and the latter to the "ground"
+            if(!my.sprite.player.body.blocked.down) {
+                my.sprite.player.anims.play('jump');
+            }
+            if (my.sprite.player.body.blocked.down && (Phaser.Input.Keyboard.JustDown(cursors.up) || this.WKey.isDown)) {
+                my.sprite.player.body.setVelocityY(this.JUMP_VELOCITY);
+            }
             
-            if (cursors.up.isDown) {
-                my.sprite.player.body.setVelocityY(-this.DASH_VELOCITY);
+            // player dash
+            if (my.sprite.player.body.blocked.down) { this.numOfDashes = 0}
+            if (this.numOfDashes<=1){
+                if (Phaser.Input.Keyboard.JustDown(this.shiftKey) && this.canDash) {
+                    // left dash
+                    if (cursors.left.isDown || this.AKey.isDown) {
+                        my.sprite.player.body.setVelocityY(0);
+                        my.sprite.player.setVelocityX(-this.DASH_VELOCITY);
 
-                my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
-                my.vfx.dashing.start();
-                this.SFX_Dash.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
-                this.cameras.main.shake(100, 0.002);
+                        my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
+                        my.vfx.dashing.start();
+                        this.SFX_Dash.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
+                        this.cameras.main.shake(100, 0.002);
+                    // right dash
+                    } else if (cursors.right.isDown || this.DKey.isDown) {
+                        my.sprite.player.body.setVelocityY(0);
+                        my.sprite.player.setVelocityX(this.DASH_VELOCITY);
+
+                        my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
+                        my.vfx.dashing.start();
+                        this.SFX_Dash.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
+                        this.cameras.main.shake(100, 0.002);
+                    } 
+
+
+                    this.canDash = false;
+
+                    // up dash
+                    if (cursors.up.isDown || this.WKey.isDown) {
+                        this.canDash = true;
+                        this.numOfDashes++;
+                        my.sprite.player.body.setVelocityY(-this.DASH_VELOCITY);
+
+                        my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
+                        my.vfx.dashing.start();
+                        this.SFX_Dash.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
+                        this.cameras.main.shake(100, 0.002);
+                    }
+                    // down dash
+                    if (cursors.down.isDown || this.SKey.isDown) {
+                        this.numOfDashes++;
+                        my.sprite.player.body.setVelocityX(0);
+                        my.sprite.player.body.setVelocityY(this.DASH_VELOCITY);
+
+                        my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
+                        my.vfx.dashing.start();
+                        this.SFX_Dash.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
+                        this.cameras.main.shake(100, 0.002);
+                    }
+
+                    // Re-enable dash after cooldown
+                    this.time.delayedCall(this.dashCooldown, () => {
+                        this.canDash = true;
+                        my.vfx.dashing.stop();
+                    });
+                }
             }
-
-            if (cursors.down.isDown) {
-                my.sprite.player.body.setVelocityX(0);
-                my.sprite.player.body.setVelocityY(this.DASH_VELOCITY);
-
-                my.vfx.dashing.setParticleSpeed(this.PARTICLE_VELOCITY, 0);
-                my.vfx.dashing.start();
-                this.SFX_Dash.setRate(Phaser.Math.FloatBetween(0.7, 1.3)).play();
-                this.cameras.main.shake(100, 0.002);
-            }
-
-            this.canDash = false;
-
-            // Re-enable dash after cooldown
-            this.time.delayedCall(this.dashCooldown, () => {
-                this.canDash = true;
-                my.vfx.dashing.stop();
-            });
         }
-    
         // scene restart
         if(Phaser.Input.Keyboard.JustDown(this.rKey)) {
             this.scene.restart();

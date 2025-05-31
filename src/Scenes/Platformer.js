@@ -10,6 +10,9 @@ class Platformer extends Phaser.Scene {
         //pause
         this.isPaused = false;
 
+        //mute music
+        this.muteMusic= false;
+
         // variables and settings
         this.lvl = data?.lvl ?? 1;
         this.timeLeft = 10; //timer in seconds
@@ -107,6 +110,9 @@ class Platformer extends Phaser.Scene {
         //pause key 
         this.shiftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
         
+        //mute music key
+        this.MKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.M);
+
         //wasd keys
         this.WKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
         this.AKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
@@ -248,6 +254,12 @@ class Platformer extends Phaser.Scene {
             my.sprite.player.setVelocityY(0);
             my.sprite.player.setAccelerationX(0);
             my.sprite.player.setAccelerationY(0);
+        }
+
+        //mute music
+        if (Phaser.Input.Keyboard.JustDown(this.MKey)) {
+            this.muteMusic = this.muteMusic ? false : true;
+            globalMusic.volume = globalMusic.volume == 1 ? 0 : 1;
         }
 
         const player = my.sprite.player;
